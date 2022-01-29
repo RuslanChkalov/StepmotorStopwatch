@@ -1,29 +1,38 @@
-package services.devices.readers;
+package services.customSerialDevices.readers;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Default serialport data receiver. Each PortReader contains unique actions for each SerialDevice on data receive.
  */
-public class PortReader implements SerialPortEventListener {
+public abstract class PortReader implements SerialPortEventListener {
+    public static final Logger logger = LogManager.getLogger(PortReader.class);
 
-    private SerialPort serialPort;
+    protected SerialPort serialPort;
 
-    public PortReader(SerialPort serialPort) {
+    public PortReader() {
+    }
+
+    public void setSerialPort(SerialPort serialPort) {
         this.serialPort = serialPort;
     }
 
+    /**
+     * On COM-port data receiver method.
+     */
     @Override
     public void serialEvent(SerialPortEvent event) {
         if (event.isRXCHAR() && event.getEventValue() > 0) {
             try {
                 String receivedData = serialPort.readString(event.getEventValue());
-                System.out.println(receivedData);
+                logger.debug(receivedData);
             } catch (SerialPortException ex) {
-                System.out.println("Error in receiving response from port: " + ex);
+                logger.debug("Error in receiving response from port: " + ex);
             }
         }
     }
