@@ -1,4 +1,4 @@
-package services.customSerialDevices;
+package com.jenkins.larenax.services.customSerialDevices;
 
 /**
  * Available Baudrate values for SerialDevices init-method

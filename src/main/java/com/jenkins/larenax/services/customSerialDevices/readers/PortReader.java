@@ -1,4 +1,4 @@
-package services.customSerialDevices.readers;
+package com.jenkins.larenax.services.customSerialDevices.readers;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -14,6 +14,11 @@ public abstract class PortReader implements SerialPortEventListener {
     public static final Logger logger = LogManager.getLogger(PortReader.class);
 
     protected SerialPort serialPort;
+    protected Object guiController;
+
+    public PortReader(Object guiController) {
+        this.guiController = guiController;
+    }
 
     public PortReader() {
     }

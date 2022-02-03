@@ -1,8 +1,7 @@
-package services.customSerialDevices.exceptions;
+package com.jenkins.larenax.services.customSerialDevices.exceptions;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import services.customSerialDevices.SerialDevice;
 
 public class SerialDeviceException extends Exception{
     private static final Logger logger = LogManager.getLogger(SerialDeviceException.class);
