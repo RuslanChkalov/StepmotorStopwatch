@@ -1,4 +1,4 @@
-package com.jenkins.larenax.services.customSerialDevices.readers;
+package com.jenkins.larenax.devices.customSerialDevice;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -8,13 +8,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Default serialport data receiver. Each PortReader contains unique actions for each SerialDevice on data receive.
+ * Default {@link SerialDevice} data receiver. Each PortReader contains unique actions for each {@link SerialDevice} on data receive.
  */
 public abstract class PortReader implements SerialPortEventListener {
     public static final Logger logger = LogManager.getLogger(PortReader.class);
 
     protected SerialPort serialPort;
-    protected Object guiController;
+    private Object guiController;
 
     public PortReader(Object guiController) {
         this.guiController = guiController;

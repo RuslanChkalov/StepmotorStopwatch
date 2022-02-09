@@ -1,4 +1,4 @@
-package com.jenkins.larenax.services.customSerialDevices.exceptions;
+package com.jenkins.larenax.devices.customSerialDevice.exceptions;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

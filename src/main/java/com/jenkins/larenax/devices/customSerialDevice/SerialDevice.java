@@ -1,16 +1,14 @@
-package com.jenkins.larenax.services.customSerialDevices;
+package com.jenkins.larenax.devices.customSerialDevice;
 
+import com.jenkins.larenax.devices.customSerialDevice.exceptions.SerialDeviceException;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.jenkins.larenax.services.customSerialDevices.exceptions.SerialDeviceException;
-import com.jenkins.larenax.services.customSerialDevices.readers.PortReader;
 
 import java.util.Arrays;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,20 +17,22 @@ import java.util.concurrent.TimeUnit;
 public class SerialDevice {
     private static final Logger logger = LogManager.getLogger(SerialDevice.class);
 
-    private TimerTask task;
+    private BaseCheckTask task;
     private Timer timer;
 
     private SerialPort serialPort;
     private String closePhrase;
 
+    private boolean deviceConnectingProcess = false;
+
     public SerialDevice() {
     }
 
     /**
-     * SerialDevice check state method.
+     * {@link SerialDevice} check state method.
      */
     public boolean isOpened() {
-        if (serialPort == null) {
+        if (serialPort == null || deviceConnectingProcess) {
             return false;
         }
         //Check if device was disconnected after init
@@ -44,13 +44,23 @@ public class SerialDevice {
     }
 
     /**
-     * The timer allows to check the status of SerialDevice in background.
+     * Get connecting process state method.
      */
-    public void addTimer(TimerTask task) {
+    public boolean isDeviceConnectingProcess() {
+        return deviceConnectingProcess;
+    }
+
+    /**
+     * The timer allows to check the status of {@link SerialDevice} in background.
+     */
+    public void addTimer(BaseCheckTask task) {
+        if (task == null) {
+            return;
+        }
         removeTimer();
         timer = new Timer();
         this.task = task;
-        timer.schedule(this.task, 0, 3000l);
+        timer.schedule(this.task, 0, 1000l);
     }
 
     /**
@@ -59,20 +69,24 @@ public class SerialDevice {
     public void removeTimer() {
         if (task != null) {
             task.cancel();
+            task.closeEvent();
+            task = null;
         }
         if (timer != null) {
             timer.cancel();
             timer.purge();
+            timer = null;
         }
     }
 
     /**
-     * SerialDevice init-method, looking for a correct COM-port by code phrase.
+     * {@link SerialDevice} init-method, looking for a correct COM-port by code phrase.
      * Allows to attach custom Reader to EventListener.
      */
     public void init(Baudrate baudrate, PortReader newReaderExample, String sendCodePhrase, String expectedCodePhrase, String closePhrase) throws SerialDeviceException, SerialPortException {
         close();
         String[] portNames = SerialPortList.getPortNames();
+        deviceConnectingProcess = true;
 
         new Thread(() -> {
             for (String portName : portNames) {
@@ -111,15 +125,21 @@ public class SerialDevice {
                 this.closePhrase = closePhrase;
                 try {
                     serialPort.addEventListener(newReaderExample, SerialPort.MASK_RXCHAR);
+                    if (task!=null) {
+                        task.connectedEvent();
+                    }
                 } catch (SerialPortException e) {
                     logger.warn(e);
                 }
+            } else {
+                removeTimer();
             }
+            deviceConnectingProcess = false;
         }).start();
     }
 
     /**
-     * To SerialDevice writing method.
+     * To {@link SerialDevice} writing method.
      */
     public void write(String text) throws SerialPortException, SerialDeviceException {
         if (!isOpened()) {
@@ -129,15 +149,17 @@ public class SerialDevice {
     }
 
     /**
-     * SerialDevice closing method.
+     * {@link SerialDevice} closing method.
      */
-    public void close() throws SerialPortException, SerialDeviceException {
+    public void close() {
+        removeTimer();
         try {
-            serialPort.writeString(closePhrase);
+            if (closePhrase != null) {
+                serialPort.writeString(closePhrase);
+            }
             serialPort.closePort();
         } catch (Exception e) {
         }
-        removeTimer();
         serialPort = null;
     }
 }

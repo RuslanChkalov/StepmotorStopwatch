@@ -30,7 +30,9 @@ public class ApplicationStartup extends Application {
         mainController = loader.getController();
         stage.setTitle("Title");
         stage.setResizable(false);
-        stage.setScene(new Scene(root, 500, 500));
+        Scene scene = new Scene(root, 500, 500);
+        scene.getStylesheets().add(String.valueOf(getClass().getResource("/stylesheet.css")));
+        stage.setScene(scene);
         stage.setOnCloseRequest(e -> Platform.exit());
         stage.show();
     }

@@ -1,7 +1,7 @@
-package com.jenkins.larenax.services.customSerialDevices;
+package com.jenkins.larenax.devices.customSerialDevice;
 
 /**
- * Available Baudrate values for SerialDevices init-method
+ * Available Baudrate values for {@link SerialDevice} init-method.
  */
 public enum Baudrate {
     BAUDRATE_110(110),
