@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
@@ -82,8 +83,20 @@ public class SerialDevice {
     /**
      * {@link SerialDevice} init-method, looking for a correct COM-port by code phrase.
      * Allows to attach custom Reader to EventListener.
+     *
+     * @param baudrate           Serial Device {@link Baudrate}.
+     * @param portReader         {@link PortReader} receiver event for bidirectional connection. Can be null for unidirectional connection.
+     * @param sendCodePhrase     Message sent to device to establish connection.
+     * @param expectedCodePhrase Message expected from the device to establish connection.
+     * @param closePhrase        Message sent to device before SerialPort is closed. Can be null.
      */
-    public void init(Baudrate baudrate, PortReader newReaderExample, String sendCodePhrase, String expectedCodePhrase, String closePhrase) throws SerialDeviceException, SerialPortException {
+    public void init(Baudrate baudrate,
+                     PortReader portReader,
+                     String sendCodePhrase,
+                     String expectedCodePhrase,
+                     String closePhrase,
+                     List<String> paramsOnConnection
+    ) {
         close();
         String[] portNames = SerialPortList.getPortNames();
         deviceConnectingProcess = true;
@@ -102,7 +115,7 @@ public class SerialDevice {
 
                     serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
 
-                    TimeUnit.MILLISECONDS.sleep(1000);
+                    TimeUnit.MILLISECONDS.sleep(2000);
                     serialPort.writeString(sendCodePhrase);
                     TimeUnit.MILLISECONDS.sleep(2000);
                     String receivedData = serialPort.readString();
@@ -121,20 +134,33 @@ public class SerialDevice {
             }
             if (serialPort != null) {
                 logger.info("Port found: " + serialPort.getPortName());
-                newReaderExample.setSerialPort(serialPort);
                 this.closePhrase = closePhrase;
                 try {
-                    serialPort.addEventListener(newReaderExample, SerialPort.MASK_RXCHAR);
-                    if (task!=null) {
+                    if (portReader != null) {
+                        portReader.setSerialPort(serialPort);
+                        serialPort.addEventListener(portReader, SerialPort.MASK_RXCHAR);
+                    }
+                    if (task != null) {
                         task.connectedEvent();
                     }
                 } catch (SerialPortException e) {
                     logger.warn(e);
                 }
+                deviceConnectingProcess = false;
+                if (paramsOnConnection != null) {
+                    try {
+                        for (String param : paramsOnConnection) {
+                            write(param);
+                            TimeUnit.MILLISECONDS.sleep(200);
+                        }
+                    } catch (Exception e) {
+                        logger.warn(e);
+                    }
+                }
             } else {
                 removeTimer();
+                deviceConnectingProcess = false;
             }
-            deviceConnectingProcess = false;
         }).start();
     }
 
@@ -154,10 +180,12 @@ public class SerialDevice {
     public void close() {
         removeTimer();
         try {
-            if (closePhrase != null) {
-                serialPort.writeString(closePhrase);
+            if (serialPort != null) {
+                if (closePhrase != null) {
+                    serialPort.writeString(closePhrase);
+                }
+                serialPort.closePort();
             }
-            serialPort.closePort();
         } catch (Exception e) {
         }
         serialPort = null;

@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import javafx.scene.image.Image;
 
 
 public class ApplicationStartup extends Application {
@@ -28,9 +29,10 @@ public class ApplicationStartup extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/gui.fxml"));
         Parent root = loader.load();
         mainController = loader.getController();
-        stage.setTitle("Title");
+        stage.setTitle("Mixer");
+        stage.getIcons().add(new Image(String.valueOf(getClass().getResource("/icon.png"))));
         stage.setResizable(false);
-        Scene scene = new Scene(root, 500, 500);
+        Scene scene = new Scene(root, 562, 530);
         scene.getStylesheets().add(String.valueOf(getClass().getResource("/stylesheet.css")));
         stage.setScene(scene);
         stage.setOnCloseRequest(e -> Platform.exit());
@@ -50,10 +52,10 @@ public class ApplicationStartup extends Application {
      * GLOBAL Method called when the application terminates
      */
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         mainController.onApplicationClose();
         logger.info("Application Stopped");
-        super.stop();
+        System.exit(0);
     }
 
 }
