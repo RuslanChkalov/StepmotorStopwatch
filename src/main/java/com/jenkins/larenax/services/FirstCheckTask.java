@@ -9,8 +9,8 @@ import jssc.SerialPortException;
 public class FirstCheckTask extends BaseCheckTask {
 
     private final MainController mainController;
-    private ServiceFunctions serviceFunctions;
-    private ButtonsActionImpl buttonsAction;
+    private final ServiceFunctions serviceFunctions;
+    private final ButtonsActionImpl buttonsAction;
 
     public FirstCheckTask(MainController mainController) {
         this.mainController = mainController;

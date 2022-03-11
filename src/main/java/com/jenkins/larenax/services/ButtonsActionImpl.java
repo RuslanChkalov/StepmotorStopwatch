@@ -17,7 +17,7 @@ public class ButtonsActionImpl {
 
     private TimerTask timerTask;
     private Timer timer;
-    private StopWatch stopWatch = new StopWatch();
+    private final StopWatch stopWatch = new StopWatch();
 
     /**
      * Custom actions class.
@@ -37,7 +37,7 @@ public class ButtonsActionImpl {
     }
 
     public void startWorkButtonActionImpl() throws SerialPortException, SerialDeviceException {
-        mainController.getSerialDevice().rotateClockwise(Double.valueOf(mainController.getInputSpeedField().getText())*6);
+        mainController.getSerialDevice().rotateClockwise(Double.valueOf(mainController.getInputSpeedField().getText()) * 6, true);
         mainController.getStartWorkButton().setDisable(true);
         mainController.getStopWorkButton().setDisable(false);
         mainController.getInputSpeedField().setDisable(true);

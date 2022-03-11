@@ -100,6 +100,7 @@ public class MainController {
     void conDeviceButtonAction(ActionEvent event) throws SerialPortException, SerialDeviceException {
         if (serialDevice == null) {
             serialDevice = new StepmotorController(AngularDisplacement.DEGREE_7_5, StepDivider.DIVIDE_BY_32);
+            serialDevice.setSoftStartParams(100, 100, 8);
         }
         try {
             serviceFunctions.printMessage("Подключение устройства", MessageLevel.INFO, false);

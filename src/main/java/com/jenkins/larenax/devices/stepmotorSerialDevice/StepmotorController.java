@@ -8,11 +8,14 @@ import jssc.SerialPortException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class StepmotorController extends SerialDevice {
 
-    private int divider;
-    private double angularDisplacement;
+    private final int divider;
+    private final double angularDisplacement;
+    private boolean softStartProcess;
+    private SoftStartParams softStartParams;
 
     /**
      * {@link StepmotorController} constructor.
@@ -71,17 +74,29 @@ public class StepmotorController extends SerialDevice {
     /**
      * Endless rotation starting method, clockwise direction. The real direction is determined by connecting the motor windings to driver.
      */
-    public void rotateClockwise(double speedInAnglesPerSecond) throws SerialPortException, SerialDeviceException {
-        double speedInStepsPerSecond = divider * speedInAnglesPerSecond / angularDisplacement;
-        String frequency = String.valueOf(Math.round(speedInStepsPerSecond));
-        this.write(frequency + "|0");
+    public void rotateClockwise(double speedInAnglesPerSecond, boolean softStart) throws SerialPortException, SerialDeviceException {
+        if (softStart) {
+            try {
+                softStartMethod(speedInAnglesPerSecond);
+            } catch (Exception e) {
+            }
+        } else {
+            this.write(speedToStringConvert(speedInAnglesPerSecond));
+        }
     }
 
     /**
      * Endless rotation starting method, conterclockwise direction. The real direction is determined by connecting the motor windings to driver.
      */
-    public void rotateConterclockwise(double speedInAnglesPerSecond) throws SerialPortException, SerialDeviceException {
-        rotateClockwise(-speedInAnglesPerSecond);
+    public void rotateConterclockwise(double speedInAnglesPerSecond, boolean softStart) throws SerialPortException, SerialDeviceException {
+        if (softStart) {
+            try {
+                softStartMethod(-speedInAnglesPerSecond);
+            } catch (Exception e) {
+            }
+        } else {
+            this.write(speedToStringConvert(-speedInAnglesPerSecond));
+        }
     }
 
     /**
@@ -106,6 +121,78 @@ public class StepmotorController extends SerialDevice {
      * Stop rotation method.
      */
     public void stopRotation() throws SerialPortException, SerialDeviceException {
-        this.write("0|0");
+        softStartProcess = false;
+        if (this.isOpened()) {
+            this.write("0|0");
+        }
+    }
+
+    /**
+     * The method is designed to gradually increase the speed of the stepper motor according to the soft start algorithm.
+     * {@link SoftStartParams} must be set.
+     *
+     * @param finalSpeed The speed that stepmotor must reach as a result of soft-start method. Given in angles per second.
+     */
+    private void softStartMethod(double finalSpeed) throws SerialDeviceException {
+        if (softStartProcess) {
+            throw new SerialDeviceException("Process already started");
+        }
+        if (softStartParams == null || !softStartParams.isParamsSet()) {
+            throw new SerialDeviceException("Soft start parameters not set");
+        }
+
+        softStartProcess = true;
+        long numberOfSteps = Math.round((Math.abs(finalSpeed) - softStartParams.getStartingSpeed()) / softStartParams.getStep());
+        long delay = 1000 * softStartParams.getTimeLimit() / numberOfSteps;
+
+        new Thread(() -> {
+            double currentSpeed = softStartParams.getStartingSpeed();
+            for (int i = 0; i < numberOfSteps; i++) {
+                if (!softStartProcess) {
+                    break;
+                }
+                try {
+                    logger.debug(speedToStringConvert(finalSpeed > 0 ? currentSpeed : -currentSpeed));
+                    this.write(speedToStringConvert(finalSpeed > 0 ? currentSpeed : -currentSpeed));
+                    TimeUnit.MILLISECONDS.sleep(delay);
+                    currentSpeed += softStartParams.getStep();
+                } catch (Exception e) {
+                    logger.debug(e.getMessage());
+                }
+            }
+            try {
+                logger.debug(speedToStringConvert(finalSpeed));
+                this.write(speedToStringConvert(finalSpeed));
+            } catch (Exception e) {
+                logger.debug(e.getMessage());
+            }
+        }).start();
+    }
+
+    /**
+     * {@link SoftStartParams} definition method.
+     * Optional, used for {@link #rotateConterclockwise} and {@link #rotateClockwise} methods, if defined with softStart param.
+     *
+     * @param startingSpeed Starting speed for stepmotor soft-start method. Given in angles per second.
+     * @param step          Speed increase per iteration. Given in angles per second.
+     * @param timeLimit     The time limit for the stepmotor to reach its final speed. Given in seconds.
+     */
+    public void setSoftStartParams(double startingSpeed, double step, int timeLimit) {
+        this.softStartParams = new SoftStartParams(startingSpeed, step, timeLimit);
+    }
+
+    /**
+     * {@link SoftStartParams} definition method.
+     */
+    public void setSoftStartParams(SoftStartParams softStartParams) {
+        this.softStartParams = softStartParams;
+    }
+
+    /**
+     * System method. Speed in angles per second to controller command converter.
+     */
+    private String speedToStringConvert(double speedInAnglesPerSecond) {
+        double speedInStepsPerSecond = divider * speedInAnglesPerSecond / angularDisplacement;
+        return (Math.round(speedInStepsPerSecond) + "|0");
     }
 }

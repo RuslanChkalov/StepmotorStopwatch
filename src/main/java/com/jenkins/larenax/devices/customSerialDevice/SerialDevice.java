@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Universal Serial device class, contains unified methods.
  */
 public class SerialDevice {
-    private static final Logger logger = LogManager.getLogger(SerialDevice.class);
+    public static final Logger logger = LogManager.getLogger(SerialDevice.class);
 
     private BaseCheckTask task;
     private Timer timer;
