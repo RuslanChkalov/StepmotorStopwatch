@@ -161,8 +161,10 @@ public class StepmotorController extends SerialDevice {
                 }
             }
             try {
-                logger.debug(speedToStringConvert(finalSpeed));
-                this.write(speedToStringConvert(finalSpeed));
+                if (softStartProcess) {
+                    logger.debug(speedToStringConvert(finalSpeed));
+                    this.write(speedToStringConvert(finalSpeed));
+                }
             } catch (Exception e) {
                 logger.debug(e.getMessage());
             }
